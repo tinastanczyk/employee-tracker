@@ -13,6 +13,7 @@ const questions = [
       "Add a role",
       "Add an employee",
       "Update an employee role",
+      "Quit"
     ],
   },
 ];
@@ -25,25 +26,12 @@ function addDept() {
         type: "input",
         message: "Enter department name: ",
         name: "newDept"
-      },
-      {
-        type: "list",
-        message: "What would you like to do?",
-        name: "options",
-        choices: [
-          "View all departments",
-          "View all roles",
-          "View all employees",
-          "Add a department",
-          "Add a role",
-          "Add an employee",
-          "Update an employee role",
-        ],
       }
     ])
     .then((data) => {
-      db.query(`INSERT INTO departments` (id, data.newDept), function (err, results) {
-        console.log(results);
+      db.query(`INSERT INTO departments (name)VALUES (?)`, data.newDept, function (err, results) {
+        console.log(`${data.newDept} was successfully added to departments table`);
+        init();
       });
     })
   
@@ -59,14 +47,27 @@ function init() {
       case "Add a department":
         addDept();
         break;
+      case "View all roles":
+        viewRoles();
+        break;
+      case "Quit":
+        break;
     }
   });
 }
 
 function viewDepts() {
-  db.query("SELECT * FROM departments", function (err, results) {
+  db.query("SELECT departments.department_id, departments.department_name FROM departments", function (err, results) {
     console.table(results);
+    init();
   });
+}
+
+function viewRoles() {
+  db.query(`SELECT roles.role_id, roles.role_name, departments.department_name, roles.role_salary FROM roles JOIN departments ON roles.department_id = departments.department_id`, function (err, results) {
+    console.table(results);
+    init();
+  })
 }
 
 init();
