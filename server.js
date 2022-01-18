@@ -7,5 +7,4 @@ const db = mysql.createConnection({
 },
 console.log(`Connected to departments_db database.`)
 );
-
 module.exports = db;

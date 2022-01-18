@@ -2,8 +2,5 @@
   "dependencies": {
     "inquirer": "^8.2.0",
     "mysql2": "^2.3.3"
-  },
-  "devDependencies": {
-    "express": "^4.17.2"
   }
 }

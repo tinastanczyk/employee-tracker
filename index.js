@@ -42,7 +42,7 @@ function addDept() {
       }
     ])
     .then((data) => {
-      db.query(`INSERT INTO departments (id, data.newDept)`, function (err, results) {
+      db.query(`INSERT INTO departments` (id, data.newDept), function (err, results) {
         console.log(results);
       });
     })
@@ -50,33 +50,22 @@ function addDept() {
 }
 
 function init() {
-  inquirer.prompt([
-    {
-      type: "list",
-      message: "What would you like to do?",
-      name: "options",
-      choices: [
-        "View all departments",
-        "View all roles",
-        "View all employees",
-        "Add a department",
-        "Add a role",
-        "Add an employee",
-        "Update an employee role",
-      ],
-    },
-  ]).then((data) => {
+  inquirer.prompt(questions).then((data) => {
     console.log(data.options);
-    if (data.options === "View all departments") {
-      viewDepts();
+    switch(data.options){
+      case "View all departments":
+        viewDepts();
+        break;
+      case "Add a department":
+        addDept();
+        break;
     }
-
   });
 }
 
 function viewDepts() {
   db.query("SELECT * FROM departments", function (err, results) {
-    console.log(results);
+    console.table(results);
   });
 }
 
