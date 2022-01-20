@@ -17,6 +17,7 @@ const questions = [
       "Add a role",
       "Add an employee",
       "Update an employee role",
+      "Update employee's manager",
       "Quit",
     ],
   },
@@ -232,6 +233,55 @@ function updateRole() {
   );
 }
 
+function updateManager() {
+  console.log("in updateManager function");
+  getManagers();
+  db.query(
+    `SELECT employees.first_name, employees.last_name FROM employees`,
+    function (err, results) {
+      for (let i = 0; i < results.length; i++) {
+        employees.push(results[i].first_name + " " + results[i].last_name);
+      }
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            message: "Which employee's manager do you want to update?",
+            name: "employee",
+            choices: employees,
+          },
+          {
+            type: "list",
+            message:
+              "Which manager do you want to assign the selected employee?",
+            name: "manager",
+            choices: managers,
+          },
+        ])
+        .then((data) => {
+          const empFirst = data.employee.split(" ")[0];
+          const empLast = data.employee.split(" ")[1];
+          db.query(
+            `SELECT employees.employee_id FROM employees WHERE employees.first_name = ? AND employees.last_name = ?`,
+            [empFirst, empLast],
+            function (err, results) {
+              const empID = results[0].employee_id;
+              db.query(
+                `UPDATE employees SET employees.manager = ? WHERE employees.employee_id = ?`,
+                [data.manager, empID],
+                function (err, results) {
+                  console.log(
+                    `Employee, ${data.employee}, has been successfully updated to have ${data.manager} as Manager.`
+                  );
+                  init();
+                }
+              );
+            }
+          );
+        });
+    }
+  );
+}
 function init() {
   inquirer.prompt(questions).then((data) => {
     console.log(data.options);
@@ -256,6 +306,9 @@ function init() {
         break;
       case "Update an employee role":
         updateRole();
+        break;
+      case "Update employee's manager":
+        updateManager();
         break;
       case "Quit":
         break;
