@@ -1,10 +1,13 @@
+// includes inquirer package, db folder and console.table package
 const inquirer = require("inquirer");
 const db = require("./db");
-const cTable = require('console.table');
+const cTable = require("console.table");
+// globally scoped arrays for respective strings
 const depts = [];
 const roles = [];
 const managers = [];
 const employees = [];
+// user prompts when app is initialized
 const questions = [
   {
     type: "list",
@@ -19,12 +22,11 @@ const questions = [
       "Add an employee",
       "Update an employee role",
       "Update employee's manager",
-      "View employees by manager",
       "Quit",
     ],
   },
 ];
-
+// query function to put department names in array depts
 function getDepts() {
   db.query(
     `SELECT departments.department FROM departments`,
@@ -35,7 +37,7 @@ function getDepts() {
     }
   );
 }
-
+// query function to put role names in array roles
 function getRoles() {
   db.query(`SELECT roles.title FROM roles`, function (err, results) {
     for (let i = 0; i < results.length; i++) {
@@ -43,7 +45,7 @@ function getRoles() {
     }
   });
 }
-
+// query function to put manager names in array managers
 function getManagers() {
   db.query(`SELECT employees.manager FROM employees`, function (err, results) {
     for (let i = 0; i < results.length; i++) {
@@ -51,9 +53,8 @@ function getManagers() {
     }
   });
 }
-
+// function to add a department to departments table
 function addDept() {
-  console.log("in addDept function");
   inquirer
     .prompt([
       {
@@ -67,17 +68,14 @@ function addDept() {
         `INSERT INTO departments (department)VALUES (?)`,
         data.newDept,
         function (err, results) {
-          console.log(
-            `${data.newDept} was successfully added to departments table`
-          );
           init();
         }
       );
     });
 }
-
+// function to add role to roles table
 function addRole() {
-  console.log("in addRole function");
+  // calling getDepts to create array, depts
   getDepts();
   inquirer
     .prompt([
@@ -99,7 +97,6 @@ function addRole() {
       },
     ])
     .then((data) => {
-      console.log(data.roleDept);
       db.query(
         `SELECT departments.department_id FROM departments WHERE department = ?`,
         data.roleDept,
@@ -109,9 +106,6 @@ function addRole() {
             `INSERT INTO roles (title, department_id, salary)VALUES (?,?,?)`,
             [data.newRole, roleDeptID, data.newSalary],
             function (err, results) {
-              console.log(
-                `${data.newRole} with a ${data.newSalary} was successfully added to roles table`
-              );
               init();
             }
           );
@@ -119,9 +113,9 @@ function addRole() {
       );
     });
 }
-
+//  function to add employee to employees table
 function addEmployee() {
-  console.log("in addEmployee function");
+  // calling getRoles and getManagers to create roles and managers arrays
   getRoles();
   getManagers();
   inquirer
@@ -164,9 +158,6 @@ function addEmployee() {
                 `INSERT INTO employees (first_name, last_name, manager, department_id, role_id) VALUES (?,?,?,?,?)`,
                 [data.firstName, data.lastName, data.manager, roleID, deptID],
                 (err, results) => {
-                  console.log(
-                    `${data.firstName} ${data.lastName} was successfully added to employees table`
-                  );
                   init();
                 }
               );
@@ -176,14 +167,16 @@ function addEmployee() {
       );
     });
 }
-
+// function to update an employee's role in the employees table
 function updateRole() {
-  console.log("in updateRole function");
+  // Calling getRoles to create roles array
   getRoles();
+  // query to create employees array
   db.query(
     `SELECT employees.first_name, employees.last_name FROM employees`,
     function (err, results) {
       for (let i = 0; i < results.length; i++) {
+        // pushing first and last name of employee into a single index of employees array
         employees.push(results[i].first_name + " " + results[i].last_name);
       }
       inquirer
@@ -202,27 +195,27 @@ function updateRole() {
           },
         ])
         .then((data) => {
+          // separating first and last name from employee selected
           const empFirst = data.employee.split(" ")[0];
           const empLast = data.employee.split(" ")[1];
+          // query to get role_id and department_id from role selected
           db.query(
             `SELECT role_id, department_id FROM roles WHERE title = ?`,
             data.role,
             function (err, results) {
               const roleID = results[0].role_id;
               const deptID = results[0].department_id;
+              // query to get employee_id from employee selected
               db.query(
                 `SELECT employees.employee_id FROM employees WHERE employees.first_name = ? AND employees.last_name = ?`,
                 [empFirst, empLast],
                 function (err, results) {
                   const empID = results[0].employee_id;
-                  console.log(`Employee ID: ${empID}`);
+                  // query to update employee role_id and department id in employees table
                   db.query(
                     `UPDATE employees SET employees.role_id = ?, employees.department_id = ? WHERE employees.employee_id = ?`,
                     [roleID, deptID, empID],
                     function (err, results) {
-                      console.log(
-                        `Employee, ${data.employee}, has been successfully updated to ${data.role} role.`
-                      );
                       init();
                     }
                   );
@@ -234,14 +227,16 @@ function updateRole() {
     }
   );
 }
-
+// function to update employee's manager in the employees table
 function updateManager() {
-  console.log("in updateManager function");
+  // calling getManagers to create managers array
   getManagers();
+  // query to create employees array
   db.query(
     `SELECT employees.first_name, employees.last_name FROM employees`,
     function (err, results) {
       for (let i = 0; i < results.length; i++) {
+        // pushing the first and last name into same index of employees array
         employees.push(results[i].first_name + " " + results[i].last_name);
       }
       inquirer
@@ -261,20 +256,20 @@ function updateManager() {
           },
         ])
         .then((data) => {
+          // separating first and last name from employee selected
           const empFirst = data.employee.split(" ")[0];
           const empLast = data.employee.split(" ")[1];
+          // query to get employee_id from employee selected
           db.query(
             `SELECT employees.employee_id FROM employees WHERE employees.first_name = ? AND employees.last_name = ?`,
             [empFirst, empLast],
             function (err, results) {
               const empID = results[0].employee_id;
+              // query to update manager for employee selected in employees table
               db.query(
                 `UPDATE employees SET employees.manager = ? WHERE employees.employee_id = ?`,
                 [data.manager, empID],
                 function (err, results) {
-                  console.log(
-                    `Employee, ${data.employee}, has been successfully updated to have ${data.manager} as Manager.`
-                  );
                   init();
                 }
               );
@@ -284,10 +279,10 @@ function updateManager() {
     }
   );
 }
-
+// function to initialize the app
 function init() {
   inquirer.prompt(questions).then((data) => {
-    console.log(data.options);
+    // calls respective functions when user clicks option
     switch (data.options) {
       case "View all departments":
         viewDepts();
@@ -313,13 +308,13 @@ function init() {
       case "Update employee's manager":
         updateManager();
         break;
+      // quits application
       case "Quit":
         process.exit(1);
-        break;
     }
   });
 }
-
+// query function to display table of all departments
 function viewDepts() {
   db.query(
     "SELECT departments.department_id, departments.department FROM departments",
@@ -329,7 +324,7 @@ function viewDepts() {
     }
   );
 }
-
+// query function to display table of all roles
 function viewRoles() {
   db.query(
     `SELECT roles.role_id, roles.title, departments.department, roles.salary FROM roles JOIN departments ON roles.department_id = departments.department_id`,
@@ -339,7 +334,7 @@ function viewRoles() {
     }
   );
 }
-
+// query function to display table of all employees
 function viewEmployees() {
   getManagers();
   db.query(
@@ -350,5 +345,5 @@ function viewEmployees() {
     }
   );
 }
-
+// calling init function to run application
 init();
