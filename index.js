@@ -1,5 +1,8 @@
 const inquirer = require("inquirer");
-const db = require("./server");
+const db = require("./db");
+const depts = [];
+const roles = [];
+const managers = [];
 const questions = [
   {
     type: "list",
@@ -17,6 +20,33 @@ const questions = [
     ],
   },
 ];
+
+function getDepts() {
+  db.query(
+    `SELECT departments.department FROM departments`,
+    function (err, results) {
+      for (let i = 0; i < results.length; i++) {
+        depts.push(results[i].department);
+      }
+    }
+  );
+}
+
+function getRoles() {
+  db.query(`SELECT roles.title FROM roles`, function (err, results) {
+    for (let i = 0; i < results.length; i++) {
+      roles.push(results[i].title);
+    }
+  });
+}
+
+function getManagers() {
+  db.query(`SELECT employees.manager FROM employees`, function (err, results) {
+    for (let i = 0; i < results.length; i++) {
+      managers.push(results[i].manager);
+    }
+  });
+}
 
 function addDept() {
   console.log("in addDept function");
@@ -44,12 +74,7 @@ function addDept() {
 
 function addRole() {
   console.log("in addRole function");
-  const depts = [];
-  db.query(`Select departments.department FROM departments`, function (err, results) {
-    for(let i=0; i<results.length; i++){
-      depts.push(results[i].department);
-    }
-  });
+  getDepts();
   inquirer
     .prompt([
       {
@@ -67,23 +92,83 @@ function addRole() {
         message: "Which department does the role belong to?",
         name: "roleDept",
         choices: depts,
-      }
+      },
     ])
     .then((data) => {
       console.log(data.roleDept);
-      db.query(`SELECT departments.department_id FROM departments WHERE department = ?`, data.roleDept, (err,results) => {
-        const roleDeptID = results[0].department_id;
-        db.query(
-          `INSERT INTO roles (title, department_id, salary)VALUES (?,?,?)`,
-          [data.newRole, roleDeptID, data.newSalary],
-          function (err, results) {
-            console.log(
-              `${data.newRole} with a ${data.newSalary} was successfully added to roles table`
-            );
-            init();
-          }
-        );
-      });
+      db.query(
+        `SELECT departments.department_id FROM departments WHERE department = ?`,
+        data.roleDept,
+        (err, results) => {
+          const roleDeptID = results[0].department_id;
+          db.query(
+            `INSERT INTO roles (title, department_id, salary)VALUES (?,?,?)`,
+            [data.newRole, roleDeptID, data.newSalary],
+            function (err, results) {
+              console.log(
+                `${data.newRole} with a ${data.newSalary} was successfully added to roles table`
+              );
+              init();
+            }
+          );
+        }
+      );
+    });
+}
+
+function addEmployee() {
+  console.log("in addEmployee function");
+  getRoles();
+  getManagers();
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        message: "What is the employee's first name?",
+        name: "firstName",
+      },
+      {
+        type: "input",
+        message: "What is the employee's last name?",
+        name: "lastName",
+      },
+      {
+        type: "list",
+        message: "What is the employee's role?",
+        name: "empRole",
+        choices: roles,
+      },
+      {
+        type: "list",
+        message: "Who is the employee's manager?",
+        name: "manager",
+        choices: managers,
+      },
+    ])
+    .then((data) => {
+      db.query(
+        `SELECT roles.role_id FROM roles WHERE title = ?`,
+        data.empRole,
+        (err, results) => {
+          const roleID = results[0].role_id;
+          db.query(
+            `SELECT roles.department_id FROM roles WHERE role_id = ?`,
+            roleID,
+            (err, results) => {
+              const deptID = results[0].department_id;
+              db.query(
+                `INSERT INTO employees (first_name, last_name, manager, department_id, role_id) VALUES (?,?,?,?,?)`,
+                [data.firstName, data.lastName, data.manager, roleID, deptID], (err, results) => {
+                  console.log(
+                    `${data.firstName} ${data.lastName} was successfully added to employees table`
+                  );
+                  init();
+                }
+              );
+            }
+          );
+        }
+      );
     });
 }
 
@@ -94,17 +179,20 @@ function init() {
       case "View all departments":
         viewDepts();
         break;
-      case "Add a department":
-        addDept();
-        break;
       case "View all roles":
         viewRoles();
         break;
       case "View all employees":
         viewEmployees();
         break;
+      case "Add a department":
+        addDept();
+        break;
       case "Add a role":
         addRole();
+        break;
+      case "Add an employee":
+        addEmployee();
         break;
       case "Quit":
         break;
