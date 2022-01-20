@@ -3,6 +3,7 @@ const db = require("./db");
 const depts = [];
 const roles = [];
 const managers = [];
+const employees = [];
 const questions = [
   {
     type: "list",
@@ -158,7 +159,8 @@ function addEmployee() {
               const deptID = results[0].department_id;
               db.query(
                 `INSERT INTO employees (first_name, last_name, manager, department_id, role_id) VALUES (?,?,?,?,?)`,
-                [data.firstName, data.lastName, data.manager, roleID, deptID], (err, results) => {
+                [data.firstName, data.lastName, data.manager, roleID, deptID],
+                (err, results) => {
                   console.log(
                     `${data.firstName} ${data.lastName} was successfully added to employees table`
                   );
@@ -170,6 +172,64 @@ function addEmployee() {
         }
       );
     });
+}
+
+function updateRole() {
+  console.log("in updateRole function");
+  getRoles();
+  db.query(
+    `SELECT employees.first_name, employees.last_name FROM employees`,
+    function (err, results) {
+      for (let i = 0; i < results.length; i++) {
+        employees.push(results[i].first_name + " " + results[i].last_name);
+      }
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            message: "Which employee's role do you want to update?",
+            name: "employee",
+            choices: employees,
+          },
+          {
+            type: "list",
+            message: "Which role do you want to assign the selected employee?",
+            name: "role",
+            choices: roles,
+          },
+        ])
+        .then((data) => {
+          const empFirst = data.employee.split(" ")[0];
+          const empLast = data.employee.split(" ")[1];
+          db.query(
+            `SELECT role_id, department_id FROM roles WHERE title = ?`,
+            data.role,
+            function (err, results) {
+              const roleID = results[0].role_id;
+              const deptID = results[0].department_id;
+              db.query(
+                `SELECT employees.employee_id FROM employees WHERE employees.first_name = ? AND employees.last_name = ?`,
+                [empFirst, empLast],
+                function (err, results) {
+                  const empID = results[0].employee_id;
+                  console.log(`Employee ID: ${empID}`);
+                  db.query(
+                    `UPDATE employees SET employees.role_id = ?, employees.department_id = ? WHERE employees.employee_id = ?`,
+                    [roleID, deptID, empID],
+                    function (err, results) {
+                      console.log(
+                        `Employee, ${data.employee}, has been successfully updated to ${data.role} role.`
+                      );
+                      init();
+                    }
+                  );
+                }
+              );
+            }
+          );
+        });
+    }
+  );
 }
 
 function init() {
@@ -193,6 +253,9 @@ function init() {
         break;
       case "Add an employee":
         addEmployee();
+        break;
+      case "Update an employee role":
+        updateRole();
         break;
       case "Quit":
         break;
