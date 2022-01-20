@@ -284,6 +284,7 @@ function updateManager() {
     }
   );
 }
+
 function init() {
   inquirer.prompt(questions).then((data) => {
     console.log(data.options);
@@ -312,10 +313,8 @@ function init() {
       case "Update employee's manager":
         updateManager();
         break;
-      case "View employees by manager":
-        viewManagerEmployees();
-        break;
       case "Quit":
+        process.exit(1);
         break;
     }
   });
