@@ -1,5 +1,6 @@
 const inquirer = require("inquirer");
 const db = require("./db");
+const cTable = require('console.table');
 const depts = [];
 const roles = [];
 const managers = [];
@@ -18,6 +19,7 @@ const questions = [
       "Add an employee",
       "Update an employee role",
       "Update employee's manager",
+      "View employees by manager",
       "Quit",
     ],
   },
@@ -310,6 +312,9 @@ function init() {
       case "Update employee's manager":
         updateManager();
         break;
+      case "View employees by manager":
+        viewManagerEmployees();
+        break;
       case "Quit":
         break;
     }
@@ -337,6 +342,7 @@ function viewRoles() {
 }
 
 function viewEmployees() {
+  getManagers();
   db.query(
     `SELECT employees.employee_id, employees.first_name, employees.last_name, roles.title, departments.department, roles.salary, employees.manager FROM employees JOIN roles ON employees.role_id = roles.role_id JOIN departments ON employees.department_id = departments.department_id`,
     function (err, results) {
